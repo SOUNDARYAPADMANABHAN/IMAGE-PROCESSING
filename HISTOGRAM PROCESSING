@@ -1,0 +1,65 @@
+import matplotlib.pyplot as plt
+from PIL import Image
+import numpy as np
+from skimage.exposure import equalize_hist
+
+IMAGE_FILEPATH = r'IMG.JPG'
+BINS = 256
+
+# Open and convert image to grayscale
+image = Image.open(IMAGE_FILEPATH)
+grayscale_image = image.convert('L')
+image = np.array(grayscale_image)
+
+def histogram_equalization_user_defined(image):
+    histogram, _ = np.histogram(image, bins=256, range=(0, 255))
+    pdf = histogram / np.sum(histogram)
+    cdf = np.cumsum(pdf)
+    cdf_normalized = (cdf - cdf.min()) * 255 / (cdf.max() - cdf.min())
+    cdf_normalized = cdf_normalized.astype(int)
+    equalized_image = np.zeros_like(image)
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            intensity = image[i, j]
+            equalized_intensity = cdf_normalized[intensity]
+            equalized_image[i, j] = equalized_intensity
+    return equalized_image
+
+# Perform histogram equalization using a direct function
+equalized_image_direct = equalize_hist(image)
+
+# Perform histogram equalization using a user-defined function
+equalized_image_user_defined = histogram_equalization_user_defined(image)
+
+# Plot the histograms and images as subplots
+fig, axs = plt.subplots(2, 3, figsize=(12, 6))
+
+axs[0, 0].hist(image.flatten(), bins=256, color='gray', alpha=0.7)
+axs[0, 0].set_xlabel('Pixel Intensity')
+axs[0, 0].set_ylabel('Frequency')
+axs[0, 0].set_title('Histogram of Original Image')
+
+axs[0, 1].imshow(image, cmap='gray')
+axs[0, 1].set_title('Original Image')
+axs[0, 1].axis('off')
+
+axs[0, 2].hist(equalized_image_user_defined.flatten(), bins=256, color='gray', alpha=0.7)
+axs[0, 2].set_xlabel('Pixel Intensity')
+axs[0, 2].set_ylabel('Frequency')
+axs[0, 2].set_title('Histogram of Equalized Image (User-Defined Function)')
+
+axs[1, 0].hist(equalized_image_direct.flatten(), bins=256, color='gray', alpha=0.7)
+axs[1, 0].set_xlabel('Pixel Intensity')
+axs[1, 0].set_ylabel('Frequency')
+axs[1, 0].set_title('Histogram of Equalized Image (Direct Function)')
+
+axs[1, 1].imshow(grayscale_image, cmap='gray')
+axs[1, 1].set_title('Grayscale Image')
+axs[1, 1].axis('off')
+
+axs[1, 2].imshow(equalized_image_direct, cmap='gray')
+axs[1, 2].set_title('Equalized Image (Direct Function)')
+axs[1, 2].axis('off')
+
+plt.tight_layout()
+plt.show()
